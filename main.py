@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 import argparse
-import sys
+from prompts import SYSTEM_PROMPT
 
 load_dotenv(dotenv_path=".envrc")
 api_key = os.environ.get("GEMINI_API_KEY")
@@ -31,7 +31,8 @@ def call_gemini(
     try:
         response = client.models.generate_content(
             model=model,
-            contents=messages
+            contents=messages,
+            config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT)
         )
         if args.verbose:
             print(f"User prompt: {args.prompt}")
