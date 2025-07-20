@@ -1,5 +1,6 @@
 from functions.check_valid_path import check_valid_path
 import os
+from google.genai import types
 
 def get_file_content(working_directory, file_path):
     try:
@@ -21,3 +22,17 @@ def get_file_content(working_directory, file_path):
         return f"Error: {e}"
     
     return file_content_string
+
+schema_get_file_content = types.FunctionDeclaration(
+    name="get_file_content",
+    description="Opens a file and returns its contents as a string, constrained to the working directory.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="The file that we would like to read from. Must be within the working directory file tree.",
+            ),
+        },
+    ),
+)
