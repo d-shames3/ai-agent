@@ -27,12 +27,9 @@ def run_python_file(working_directory, file_path, args=[]):
         output = ""
         
         if result.stdout:
-            stdout = f"STDOUT: {result.stdout}\n"
-            output += stdout
-        
+            output += result.stdout.decode()
         if result.stderr:
-            stderr = f"STDERR: {result.stderr}\n"
-            output += stderr
+            output += result.stderr.decode()
         
         if result.returncode:
             return_code = f"Process exited with return code {result.returncode}\n"
@@ -57,6 +54,7 @@ schema_run_python_file = types.FunctionDeclaration(
                 type=types.Type.ARRAY,
                 description="List of any additional arguments need to pass to the subprocess command.",
                 items=types.Schema(type=types.Type.STRING),
+                default=[],
             ),
         },
     ),
