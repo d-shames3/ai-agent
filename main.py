@@ -8,6 +8,7 @@ from functions.get_files_info import schema_get_files_info
 from functions.get_file_content import schema_get_file_content
 from functions.write_file import schema_write_file
 from functions.run_python import schema_run_python_file
+from functions.call_function import call_python_function
 
 load_dotenv(dotenv_path=".envrc")
 api_key = os.environ.get("GEMINI_API_KEY")
@@ -58,7 +59,14 @@ def call_gemini(
         if response.function_calls:
             for call in response.function_calls:
                 print(f"Calling function: {call.name}({call.args})")
-        
+                try:
+                    output = call_python_function(call, verbose=True if args.verbose else False)
+                    if not output.parts[0].function_response.response:
+                        raise Exception("error fatal")
+                    if args.verbose:
+                        print(f"-> {output.parts[0].function_response.response}")
+                except Exception as e:
+                    print({e})
     except Exception as e:
         print(e)
 
