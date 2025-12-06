@@ -55,10 +55,20 @@ def call_gemini(
             print(f"User prompt: {args.prompt}")
             print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
             print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
-        print(response.text)
+        
+        function_calls = []
+        for candidate in response.candidates:
+            for part in candidate.content.parts:
+                if part.text:
+                    print(part.text)
+                if part.function_call:
+                    function_calls.append(part.function_call)
         if response.function_calls:
             for call in response.function_calls:
-                print(f"Calling function: {call.name}({call.args})")
+                if call not in function_calls:
+                    function_calls.append(call)
+        if function_calls:
+            for call in function_calls:
                 try:
                     output = call_python_function(call, verbose=True if args.verbose else False)
                     if not output.parts[0].function_response.response:
