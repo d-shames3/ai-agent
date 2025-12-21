@@ -39,46 +39,56 @@ def call_gemini(
         messages: list[types.Content],
         args: argparse.Namespace,
         available_functions: types.Tool,
-        model: str="gemini-2.0-flash-001"
+        model: str="gemini-2.5-flash"
 ) -> None:
-
-    try:
-        response = client.models.generate_content(
-            model=model,
-            contents=messages,
-            config=types.GenerateContentConfig(
-                tools=[available_functions],
-                system_instruction=SYSTEM_PROMPT,
+    
+    messages_copy = messages.copy()
+    i = 19
+    while i > 0:
+        try:
+            response = client.models.generate_content(
+                model=model,
+                contents=messages_copy,
+                config=types.GenerateContentConfig(
+                    tools=[available_functions],
+                    system_instruction=SYSTEM_PROMPT,
+                )
             )
-        )
-        if args.verbose:
-            print(f"User prompt: {args.prompt}")
-            print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
-            print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
-        
-        function_calls = []
-        for candidate in response.candidates:
-            for part in candidate.content.parts:
-                if part.text:
-                    print(part.text)
-                if part.function_call:
-                    function_calls.append(part.function_call)
-        if response.function_calls:
-            for call in response.function_calls:
-                if call not in function_calls:
-                    function_calls.append(call)
-        if function_calls:
-            for call in function_calls:
-                try:
-                    output = call_python_function(call, verbose=True if args.verbose else False)
-                    if not output.parts[0].function_response.response:
-                        raise Exception("error fatal")
-                    if args.verbose:
-                        print(f"-> {output.parts[0].function_response.response}")
-                except Exception as e:
-                    print({e})
-    except Exception as e:
-        print(e)
+            if args.verbose:
+                print(f"User prompt: {args.prompt}")
+                print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
+                print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
+            
+            function_calls = []
+            for candidate in response.candidates:
+                messages_copy.append(candidate.content)
+                for part in candidate.content.parts:
+                    if part.function_call:
+                        function_calls.append(part.function_call)
+            if response.function_calls:
+                for call in response.function_calls:
+                    if call not in function_calls:
+                        function_calls.append(call)
+            if not function_calls and response.text is not None:
+                print(response.text)
+                break
+            if function_calls:
+                for call in function_calls:
+                    try:
+                        output = call_python_function(call, verbose=True if args.verbose else False)
+                        if not output.parts[0].function_response.response:
+                            raise Exception("error fatal")
+                        messages_copy.append(
+                            types.Content(role="user", parts=[types.Part(text=str(output.parts[0].function_response.response))])
+                        )
+                        if args.verbose:
+                            print(f"-> {output.parts[0].function_response.response}")
+                    except Exception as e:
+                        print({e})
+            i-=1
+        except Exception as e:
+            print(e)
+            break
 
 
 
